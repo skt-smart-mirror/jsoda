@@ -1,3 +1,5 @@
+var lineOffset = 8;
+var anchrSize = 4;
 
 var mousedown = false;
 var x1 = -1;
@@ -8,10 +10,21 @@ var clickedArea = {box: -1, pos:'o'};
 document.getElementById("jsoda-canvas").onmousedown = function(e) {
   mousedown = true;
   clickedArea = findCurrentArea(e.offsetX, e.offsetY);
+  if (clickedArea.box != -1) {
+    for (var i = 0; i < boxes.length; i++) {
+      boxes[i].selected = false;
+    }
+    boxes[clickedArea.box].selected = true;
+  } else {
+    for (var i = 0; i < boxes.length; i++) {
+      boxes[i].selected = false;
+    }
+  }
   x1 = e.offsetX;
   y1 = e.offsetY;
   x2 = e.offsetX;
   y2 = e.offsetY;
+  redraw();
 };
 document.getElementById("jsoda-canvas").onmouseup = function onmouseupEvent(e) {
   // if (clickedArea.box == -1) {
@@ -72,6 +85,17 @@ document.getElementById("jsoda-canvas").onmousemove = function(e) {
     //
   }
 }
+document.addEventListener('keydown', function (e) {
+  var key = e.keyCode || e.charCode;
+  if (key == 46) {
+    for (var i = 0; i < boxes.length; i++) {
+      if (boxes[i].selected) {
+        boxes.splice(i, 1);
+      }
+    }
+  }
+  redraw();
+}, false);
 
 function adjustXOffset() {
   var xOffset = x2 - x1;
@@ -170,20 +194,29 @@ function loadImage(input) {
 
         boxes = [];
         boxes.push({class: 'eyes',
-                    x1: 10,
-                    y1: 10,
-                    x2: 110,
-                    y2: 35,
+                    x1: 0,
+                    y1: 0,
+                    x2: 400,
+                    y2: 200,
+                    selected: false,
                     lineWidth: 1,
-                    color: '#00ff00'});
+                    color: {r: 0, g: 255, b: 0}});
         boxes.push({class: 'mouth',
-                    x1: 10,
-                    y1: 50,
-                    x2: 110,
-                    y2: 75,
+                    x1: 0,
+                    y1: 200,
+                    x2: 400,
+                    y2: 400,
+                    selected: false,
                     lineWidth: 1,
-                    color: '#ff0000'});
-
+                    color: {r: 255, g: 0, b: 0}});
+        boxes.push({class: 'hand',
+                    x1: 0,
+                    y1: 400,
+                    x2: 400,
+                    y2: 600,
+                    selected: false,
+                    lineWidth: 1,
+                    color: {r: 0, g: 0, b: 255}});
         redraw();
       }
       image.src = e.target.result;
@@ -198,10 +231,12 @@ function loadImage(input) {
 }
 
 function redraw() {
-  // canvas.width = canvas.width;
-  var context = document.getElementById("jsoda-canvas").getContext('2d');
-  context.clearRect(0, 0, 800, 600);
-  context.beginPath();
+  var canvas = document.getElementById("jsoda-canvas");
+  canvas.width = canvas.width;
+  var context = canvas.getContext('2d');
+  // context.clearRect(0, 0, 800, 600);
+  // context.beginPath();
+
   for (var i = 0; i < boxes.length; i++) {
     drawBoxOn(boxes[i], context);
   }
@@ -216,7 +251,6 @@ function redraw() {
 var boxes = [];
 var tmpBox = null;
 
-var lineOffset = 4;
 
 function findCurrentArea(x, y) {
   for (var i = 0; i < boxes.length; i++) {
@@ -267,26 +301,30 @@ function newBox(cls, x1, y1, x2, y2) {
             y1: boxY1,
             x2: boxX2,
             y2: boxY2,
+            selected: false,
             lineWidth: 1,
-            color: '#ff0000'};
+            color: {r: 0, g: 0, b: 0}};
   } else {
     return null;
   }
 }
 
-var anchrSize = 2;
 
 function drawBoxOn(box, context) {
   xCenter = box.x1 + (box.x2 - box.x1) / 2;
   yCenter = box.y1 + (box.y2 - box.y1) / 2;
 
-  context.strokeStyle = box.color;
-  context.fillStyle = box.color;
+  if (box.selected) {
+    context.fillStyle = 'rgba(' + box.color.r + ',' + box.color.g + ',' + box.color.b + ',0.25)';
+    context.fillRect(box.x1, box.y1, box.x2 - box.x1, box.y2 - box.y1);
+  }
 
-  context.rect(box.x1, box.y1, (box.x2 - box.x1), (box.y2 - box.y1));
+  context.strokeStyle = '#000000';//'rgb(' + box.color.r + ',' + box.color.g + ',' + box.color.b + ')';
   context.lineWidth = box.lineWidth;
+  context.rect(box.x1, box.y1, (box.x2 - box.x1), (box.y2 - box.y1));
   context.stroke();
 
+  context.fillStyle = 'rgb(' + box.color.r + ',' + box.color.g + ',' + box.color.b + ')';
   context.fillRect(box.x1 - anchrSize, box.y1 - anchrSize, 2 * anchrSize, 2 * anchrSize);
   context.fillRect(box.x1 - anchrSize, yCenter - anchrSize, 2 * anchrSize, 2 * anchrSize);
   context.fillRect(box.x1 - anchrSize, box.y2 - anchrSize, 2 * anchrSize, 2 * anchrSize);
@@ -297,7 +335,7 @@ function drawBoxOn(box, context) {
   context.fillRect(box.x2 - anchrSize, yCenter - anchrSize, 2 * anchrSize, 2 * anchrSize);
   context.fillRect(box.x2 - anchrSize, box.y2 - anchrSize, 2 * anchrSize, 2 * anchrSize);
 
-  context.font = '12.5pt Calibri';
+  context.font = '25pt Calibri';
   context.textAlign = 'center';
   context.fillText(box.class, xCenter, yCenter);
 }
